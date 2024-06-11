@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erasmus Bot</title>
+    <title>Erasmus ChatBot</title>
     <script>
         async function askQuestion() {
             const question = document.getElementById('question').value;
@@ -15,12 +15,43 @@
                 body: JSON.stringify({ question })
             });
             const data = await response.json();
-            document.getElementById('response').innerText = data.response;
+            document.getElementById('response').innerHTML = data.response;
         }
     </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        input {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        p {
+            margin: 20px;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-    <h1>Erasmus Bot</h1>
+    <h1>Erasmus ChatBot</h1>
     <input type="text" id="question" placeholder="Ask a question about Erasmus">
     <button onclick="askQuestion()">Ask</button>
     <p id="response"></p>

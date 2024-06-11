@@ -3,6 +3,7 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
+from azure.search.documents.models import VectorizedQuery
 
 load_dotenv()
 
@@ -17,32 +18,33 @@ MODEL_NAME = os.getenv('CHAT_MODEL_NAME')
 search_client = SearchClient(
     endpoint=SEARCH_ENDPOINT, 
     index_name=SEARCH_INDEX_NAME, 
-    credential=AzureKeyCredential(SEARCH_API_KEY))
+    credential=AzureKeyCredential(SEARCH_API_KEY)
+)
+
 model_client = AzureOpenAI(
     azure_endpoint=ENDPOINT,
     api_key=API_KEY,
     api_version=API_VERSION
 )
 
-def search_documents(query_vector):
-    vector_query = {
-            "kind": "vector",
-            "vector": query_vector,
-            "fields": "content_vector",
-            "k": 5
-    }
-    results = search_client.search(vector_queries=[vector_query])
-    documents = [result for result in results if result['@search.score'] > 0.1]
+# Perform hybrid search
+def search_documents(query, query_vector):
+    vector_query = VectorizedQuery(vector=query_vector, k_nearest_neighbors=3, fields='content_vector')
+    results = search_client.search(search_text=query, vector_queries=[vector_query])
+    documents = []
+    for result in results:
+        documents.append({
+            "id": result['id'],
+            "content_text": result['content_text'],
+            "score": result['@search.score']
+        })
     return documents
 
-def generate_response(prompt):
-    response = model_client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=200
-    )
-    return response.choices[0].message.content
-
-def get_document_vector(document_id):
-    result = search_client.get_document(document_id)
-    return result['content_vector']
+# TODO: Implement response generation
+# def generate_response(prompt):
+#     response = model_client.chat.completions.create(
+#         model=MODEL_NAME,
+#         messages=[{"role": "user", "content": prompt}],
+#         max_tokens=200
+#     )
+#     return response.choices[0].message.content
