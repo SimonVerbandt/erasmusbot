@@ -1,12 +1,10 @@
 import os
-import json
-from openai import AzureOpenAI
-from bs4 import BeautifulSoup
+from langchain_community.document_transformers import BeautifulSoupTransformer
+from langchain.docstore.document import Document
 from dotenv import load_dotenv
 from azure.storage.blob import BlobServiceClient
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexerClient
-from data_prep.generate_embedding import generate_embedding
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,30 +20,30 @@ container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 indexer_client = SearchIndexerClient(search_endpoint, AzureKeyCredential(search_api_key))
 indexer_name = 'indexer1717610357330'
 
-# Get parsed HTML files
-def load_filenames(data_path):
-    return [f for f in os.listdir(data_path) if f.endswith('.html')]
+# Function to clean and process HTML files
+def process_html_file(file_path):
+    bs_transformer = BeautifulSoupTransformer()
 
-# Extract text from HTML
-def extract_text(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    text = soup.get_text(separator=' ', strip=True)
-    return text
+    with open(file_path, 'r', encoding='utf-8') as file:
+        html_content = file.read()
+                
+    # Limit the context length to 1000 characters
+    context_length = 1000
+    # truncated_html = html_content[:context_length]
 
-# Chunk HTML file text into smaller pieces
-def chunk_text(text, chunk_size=1000):
-    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+    document = [Document(page_content=html_content)]
+    doc_transformed = bs_transformer.transform_documents(
+        document, 
+        tags_to_extract=["span", "table", "li", "d", "h1", "h2", "h3", "h4", "h5", "p"], 
+        unwanted_tags=["a"]
+    )[0]
+    
+    chunks = []
+    # split the content into chunks of 1000 characters
+    for i in range(0, len(doc_transformed.page_content), context_length):
+        chunks.append(doc_transformed.page_content[i:i + context_length])
 
-# Save generated embedding to JSON file
-def save_embedding(vector, text, filename, chunk_index, output_dir):
-    vector_filename = os.path.splitext(filename)[0] + f'_vector_{chunk_index}.json'
-    data = {
-        'id': f'{os.path.splitext(filename)[0]}_{chunk_index}',
-        'content_vector': vector,
-        'content_text': text
-    }
-    with open(os.path.join(output_dir, vector_filename), 'w') as f:
-        json.dump(data, f)
+    return chunks
 
 # Delete all blobs in the container
 def delete_blobs():
@@ -63,28 +61,42 @@ def upload_files(files, output_dir):
         blob_client = container_client.get_blob_client(file)
         with open(os.path.join(output_dir, file), 'rb') as f:
             blob_client.upload_blob(f)
-        os.remove(os.path.join(output_dir, file))
-        print(f"Deleted local file: {file}")
+        # os.remove(os.path.join(output_dir, file))
+        # print(f"Deleted local file: {file}")
+        
+def save_file(file_index, chunks):
+    output_dir = './data_prep/embeddings'
+    sub_index = 0
+    for chunk in chunks:
+        filename = str(file_index) + '_' + str(sub_index) + '.txt'
+        with open(os.path.join(output_dir, filename), 'w+') as f:
+            f.write(chunk)
+            print(f"Saved file: {filename}")
+        sub_index += 1
 
 def main():
     data_path = './erasmus-bot/erasmus-site-parsed'
     output_dir = './data_prep/embeddings'
     os.makedirs(output_dir, exist_ok=True)
     
-    filenames = load_filenames(data_path)
+    filenames = [file for file in os.listdir(data_path) if file.endswith('.html')]
+    count = 0
+    # delete old files
+    files = [f for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))]
+    for file in files:
+        os.remove(os.path.join(output_dir, file))
     for item in filenames:
-        with open(os.path.join(data_path, item), 'r', encoding='utf-8') as f:
-            html = f.read()
-            text = extract_text(html)
-            chunks = chunk_text(text)
-            for index, chunk in enumerate(chunks):
-                vector = generate_embedding(chunk)
-                print(f"Embedding generated for {item} chunk {index}")
-                save_embedding(vector, chunk, item, index, output_dir)
+        file_path = os.path.join(data_path, item)
+        cleaned_content = process_html_file(file_path)
+        # vector = generate_embedding(cleaned_content)
+        # print(f"Embedding generated for {item}")
+        # save_embedding(vector, cleaned_content, item, output_dir)
+        save_file(count, cleaned_content)
+        count += 1
     
     files = [f for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))]
     upload_files(files, output_dir)
-    indexer_client.run_indexer(indexer_name)
+    # indexer_client.run_indexer(indexer_name)
     
 
 if __name__ == '__main__':

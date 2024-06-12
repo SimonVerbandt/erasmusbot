@@ -4,10 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Erasmus ChatBot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/favicon_io/site.webmanifest">
     <script>
         async function askQuestion() {
             const question = document.getElementById('question').value;
-            const response = await fetch('http://127.0.0.1:5000/ask', {
+
+            // Add loading indicator
+            const chatHistory = document.getElementById('chat-history');
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message loading';
+            loadingMessage.innerText = 'Loading...';
+            chatHistory.appendChild(loadingMessage);
+
+            const response = await fetch('/ask', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -15,45 +28,106 @@
                 body: JSON.stringify({ question })
             });
             const data = await response.json();
-            document.getElementById('response').innerHTML = data.response;
+
+            chatHistory.removeChild(loadingMessage);
+
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user';
+            userMessage.innerText = question;
+            chatHistory.appendChild(userMessage);
+
+            const botMessage = document.createElement('div');
+            botMessage.className = 'message bot';
+            botMessage.innerText = data[data.length - 1].content;
+            chatHistory.appendChild(botMessage);
+
+            document.getElementById('question').value = '';
+
+            chatHistory.scrollTop = chatHistory.scrollHeight;
         }
     </script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
         }
         h1 {
-            color: #333;
+            color: #e60000;
+            margin-bottom: 20px;
         }
         input {
-            padding: 10px;
+            padding: 15px;
+            width: 500px;
+            height: 50px;
             margin: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+            text-align: center;
+        }
+        input::placeholder {
+            text-align: center; 
         }
         button {
-            padding: 10px 20px;
+            padding: 15px 30px;
             margin: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #333;
+            border: none;
+            border-radius: 25px;
+            background-color: #00bfae;
             color: #fff;
             cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
         }
         button:hover {
-            background-color: #555;
+            background-color: #009688;
         }
-        p {
-            margin: 20px;
-            color: #333;
+        #chat-history {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            width: 60%;
+            max-width: 600px;
+            height: 400px;
+            overflow-y: scroll;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        .message.user {
+            background-color: #00bfae;
+            align-self: flex-end;
+        }
+        .message.bot {
+            background-color: #e2e2e2;
+            align-self: flex-start;
+        }
+        .message.loading {
+            background-color: #f0f2f5;
+            font-style: italic;
+            color: #999;
         }
     </style>
 </head>
 <body>
     <h1>Erasmus ChatBot</h1>
+    <div id="chat-history"></div>
     <input type="text" id="question" placeholder="Ask a question about Erasmus">
     <button onclick="askQuestion()">Ask</button>
-    <p id="response"></p>
 </body>
 </html>
