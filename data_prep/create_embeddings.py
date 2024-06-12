@@ -14,7 +14,6 @@ search_endpoint = os.getenv('AZURE_SEARCH_ENDPOINT')
 search_api_key = os.getenv('AZURE_SEARCH_API_KEY')
 search_index_name = os.getenv('AZURE_SEARCH_INDEX_NAME')
 
-# Initialize Azure Blob Service Client & Azure OpenAI for embeddings
 blob_service_client = BlobServiceClient.from_connection_string(STORAGE_CONNECTION_STRING)
 container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 indexer_client = SearchIndexerClient(search_endpoint, AzureKeyCredential(search_api_key))
@@ -29,8 +28,7 @@ def process_html_file(file_path):
                 
     # Limit the context length to 1000 characters
     context_length = 1000
-    # truncated_html = html_content[:context_length]
-
+    
     document = [Document(page_content=html_content)]
     doc_transformed = bs_transformer.transform_documents(
         document, 
@@ -61,8 +59,8 @@ def upload_files(files, output_dir):
         blob_client = container_client.get_blob_client(file)
         with open(os.path.join(output_dir, file), 'rb') as f:
             blob_client.upload_blob(f)
-        # os.remove(os.path.join(output_dir, file))
-        # print(f"Deleted local file: {file}")
+        os.remove(os.path.join(output_dir, file))
+        print(f"Removed local chunk: {file}")
         
 def save_file(file_index, chunks):
     output_dir = './data_prep/embeddings'
@@ -88,15 +86,12 @@ def main():
     for item in filenames:
         file_path = os.path.join(data_path, item)
         cleaned_content = process_html_file(file_path)
-        # vector = generate_embedding(cleaned_content)
-        # print(f"Embedding generated for {item}")
-        # save_embedding(vector, cleaned_content, item, output_dir)
         save_file(count, cleaned_content)
         count += 1
     
     files = [f for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))]
     upload_files(files, output_dir)
-    # indexer_client.run_indexer(indexer_name)
+    indexer_client.run_indexer(indexer_name)
     
 
 if __name__ == '__main__':
