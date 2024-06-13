@@ -58,7 +58,7 @@ def generate_response(prompt):
     response = model_client.chat.completions.create(
         model=MODEL_NAME,
         messages=history + [{"role": "system", "content": "Based on this context answer the user's question. If the answer is not in the context, refuse to answer: " + context}],
-        max_tokens=200
+        max_tokens=1000
     )
     history.append({"role": "assistant", "content": response.choices[0].message.content})
     return history
