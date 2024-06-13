@@ -17,7 +17,7 @@ search_index_name = os.getenv('AZURE_SEARCH_INDEX_NAME')
 blob_service_client = BlobServiceClient.from_connection_string(STORAGE_CONNECTION_STRING)
 container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 indexer_client = SearchIndexerClient(search_endpoint, AzureKeyCredential(search_api_key))
-indexer_name = 'indexer1717610357330'
+indexer_name = 'indexer1718222747536'
 
 # Function to clean and process HTML files
 def process_html_file(file_path):
