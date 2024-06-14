@@ -30,7 +30,6 @@ model_client = AzureOpenAI(
 
 # Perform hybrid search
 def search_documents(query):
-    print(query)
     embedding = model_client.embeddings.create(input=query, model=EMB_NAME).data[0].embedding
     vector_query = VectorizedQuery(vector=embedding, fields="content_vector")
     results = search_client.search(search_text=query, vector_queries=[vector_query])
