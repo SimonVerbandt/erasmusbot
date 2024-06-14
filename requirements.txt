@@ -1,0 +1,9 @@
+langchain-community
+langchain
+python-dotenv
+azure-storage-blob
+azure-core
+azure-search-documents
+openai
+flask
+flask-cors
