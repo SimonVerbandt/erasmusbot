@@ -51,9 +51,9 @@ def search_documents(query):
 history = [
             {"role": "system", "content": "You are a helpful assistant made for Erasmushogeschool Brussel. You can only answer about the school or its services."}]
 
-def generate_response(prompt):
-    context = search_documents(prompt)
-    history.append({"role": "user", "content": prompt})
+def generate_response(query):
+    context = search_documents(query)
+    history.append({"role": "user", "content": query})
     response = model_client.chat.completions.create(
         model=MODEL_NAME,
         messages=history + [{"role": "system", "content": "Based on this context answer the user's question. If the answer is not in the context, refuse to answer: " + context}],

@@ -63,7 +63,7 @@ def upload_files(files, output_dir):
         print(f"Removed local chunk: {file}")
         
 def save_file(file_index, chunks):
-    output_dir = './data_prep/embeddings'
+    output_dir = './data_prep/all_chunks'
     sub_index = 0
     for chunk in chunks:
         filename = str(file_index) + '_' + str(sub_index) + '.txt'
@@ -74,7 +74,7 @@ def save_file(file_index, chunks):
 
 def main():
     data_path = './erasmus-bot/erasmus-site-parsed'
-    output_dir = './data_prep/embeddings'
+    output_dir = './data_prep/all_chunks'
     os.makedirs(output_dir, exist_ok=True)
     
     filenames = [file for file in os.listdir(data_path) if file.endswith('.html')]
